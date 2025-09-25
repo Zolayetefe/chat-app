@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const errorHandler = require("./middlewares/errorHandler");
 
 // Import routes
-// const authRoutes = require("./routes/authRoutes");
+const authRoutes = require("./routes/authRoutes");
 // const messageRoutes = require("./routes/messageRoutes");
 
 // Import error handler
@@ -38,7 +38,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // ---- Routes ----
-// app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 // app.use("/api/messages", messageRoutes);
 
 // ---- Health Check ----
