@@ -1,0 +1,58 @@
+# ---- Node.js ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Build Output ----
+dist/
+build/
+.cache/
+.tmp/
+
+# ---- TypeScript ----
+*.tsbuildinfo
+
+# ---- Logs ----
+logs
+*.log
+*.log.*
+log/
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ---- Environment ----
+.env
+.env.*.local
+.env.local
+.env.test
+.env.development.local
+.env.production.local
+
+# ---- Editor & OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ---- Coverage ----
+coverage/
+*.lcov
+
+# ---- Frontend Specific ----
+frontend/dist/
+frontend/.vite/
+frontend/.DS_Store
+
+# ---- Backend Specific ----
+backend/dist/
+backend/.DS_Store
+
+# ---- Misc ----
+*.tgz
+*.zip
+*.tar.gz
