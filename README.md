@@ -25,7 +25,6 @@ A **real-time chat application** built with **React (TypeScript)**, **Node.js (E
 
 **Backend (Node.js + Express + Socket.IO):**
 - Node.js + Express
-- TypeScript
 - Socket.IO
 - JWT Authentication
 - MongoDB + Mongoose ODM
