@@ -3,6 +3,8 @@ const http = require("http");
 const app = require("./app");
 const connectDB = require("./config/db");
 const { Server } = require("socket.io");
+const chatSocket = require("./sockets/chatSocket");
+const { initMessageController } = require("./controllers/messageController");
 
 // ---- Connect to MongoDB ----
 connectDB();
@@ -18,30 +20,9 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log(`🟢 User connected: ${socket.id}`);
-
-  // Join a conversation room
-  socket.on("join_room", (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
-  });
-
-  // Handle sending messages
-  socket.on("send_message", (data) => {
-    // data: { sender, receiver, content, roomId }
-    io.to(data.roomId).emit("receive_message", data);
-  });
-
-  // Typing indicator
-  socket.on("typing", (data) => {
-    socket.to(data.roomId).emit("typing", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`🔴 User disconnected: ${socket.id}`);
-  });
-});
+// Pass `io` to sockets + controllers
+chatSocket(io);
+initMessageController(io);
 
 // ---- Start server ----
 const PORT = process.env.PORT || 5000;
