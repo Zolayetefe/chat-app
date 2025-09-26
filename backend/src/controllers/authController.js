@@ -12,7 +12,7 @@ const registerUser = async (req, res) => {
     throw new Error("User already exists");
   }
 
-  const user = await User.create({ username, email, password });
+  const user = await User.create({ username, password });
 
   const accessToken = generateAccessToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
@@ -36,7 +36,7 @@ const registerUser = async (req, res) => {
 // Login User
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
-
+console.log("from login controller")
   const user = await User.findOne({ username });
   if (!user || !(await user.matchPassword(password))) {
     res.status(401);

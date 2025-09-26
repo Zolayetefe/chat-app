@@ -38,15 +38,25 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // ---- Routes ----
-app.use("/api/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 // app.use("/api/messages", messageRoutes);
-
+2
 // ---- Health Check ----
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+
+
 // ---- Error Handling ----
 app.use(errorHandler);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+  });
+});
 
 module.exports = app;
