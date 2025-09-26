@@ -38,9 +38,11 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // ---- Routes ----
+// ---- Routes ----
 app.use("/api/v1/auth", authRoutes);
-// app.use("/api/messages", messageRoutes);
-2
+app.use("/api/v1/messages", require("./routes/messageRoutes"));
+app.use("/api/v1/conversations", require("./routes/conversationRoutes"));
+
 // ---- Health Check ----
 app.get("/", (req, res) => {
   res.send("API is running...");
