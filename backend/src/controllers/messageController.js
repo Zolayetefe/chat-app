@@ -9,33 +9,46 @@ exports.initMessageController = (io) => {
 };
 
 // POST /messages → send message
+// src/controllers/messageController.js
 exports.sendMessage = async (req, res, next) => {
   try {
-    const { conversationId, sender, receiver, content } = req.body;
+    const { sender, receiver, content } = req.body;
 
-    if (!conversationId || !sender || !receiver || !content) {
+    if (!sender || !receiver || !content) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Save message
+    // 🔹 1. Check if conversation exists between these two users
+    let conversation = await Conversation.findOne({
+      participants: { $all: [sender, receiver] },
+    });
+
+    // 🔹 2. If no conversation, create a new one
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [sender, receiver],
+        lastMessage: content,
+      });
+    } else {
+      // Update last message if exists
+      conversation.lastMessage = content;
+      await conversation.save();
+    }
+
+    // 🔹 3. Save the message
     const message = await Message.create({
-      conversationId,
+      conversationId: conversation._id,
       sender,
       receiver,
       content,
     });
 
-    // Update conversation last message
-    await Conversation.findByIdAndUpdate(conversationId, {
-      lastMessage: content,
-    });
-
-    // Emit to room (conversationId)
+    // 🔹 4. Emit real-time message to room
     if (ioInstance) {
-      ioInstance.to(conversationId).emit("receive_message", message);
+      ioInstance.to(conversation._id.toString()).emit("receive_message", message);
     }
 
-    res.status(201).json(message);
+    res.status(201).json({ conversation, message });
   } catch (err) {
     next(err);
   }
