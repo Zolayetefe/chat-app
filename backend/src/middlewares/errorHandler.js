@@ -34,7 +34,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Generic error
   res.status(500).json({
-    error: 'Something went wrong!',
+    // error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'production' ? undefined : err.message,
   });
 };
