@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 
 // Register User
 const registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, password } = req.body;
 
   const userExists = await User.findOne({ username });
   if (userExists) {
@@ -89,4 +89,15 @@ const refreshToken = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, logoutUser, refreshToken };
+const getMe = async (req, res) => {
+  try {
+    const user = req.user
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(401);
+    throw new Error(error.message)
+  }
+};
+
+module.exports = { registerUser, loginUser, logoutUser, refreshToken, getMe};
