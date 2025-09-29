@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ChatPage from "./pages/ChatPage";
 
 const App: React.FC = () => {
   return (
@@ -13,7 +14,7 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
          <Route path="/" element={<LandingPage />} />
-
+       <Route path="chat" element={<ChatPage/>}/>
       </Routes>
   );
 };
