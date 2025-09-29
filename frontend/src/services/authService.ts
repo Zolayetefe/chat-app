@@ -1,34 +1,13 @@
-import { loginApi, logoutApi, registerApi, refreshApi } from "../api/authApi";
-import type { LoginCredentials, RegisterCredentials, User } from "../types/auth";
+import toast from "react-hot-toast";
+import type { User, LoginCredentials, RegisterCredentials, AuthResponse } from "../types/auth";
+import  { apiFetch } from "../api/api";
 
-let accessToken: string | null = null; // keep in memory
+const AUTH_URL = "/auth";
 
-export async function login(credentials: LoginCredentials) {
-  const { user, accessToken: at } = await loginApi(credentials);
-  storeUser(user, at);
-  return { user, accessToken: at };
-}
-
-export async function register(credentials: RegisterCredentials) {
-  const { user, accessToken: at } = await registerApi(credentials);
-  storeUser(user, at);
-  return { user, accessToken: at };
-}
-
-export async function refresh() {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (!refreshToken) return null;
-
-  const { accessToken: at } = await refreshApi(refreshToken);
-  accessToken = at;
-  localStorage.setItem("accessToken", at);
-  return at;
-}
-
-export async function logout() {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (refreshToken) await logoutApi(refreshToken);
-  clearUser();
+// Token helpers
+export function storeTokens(user: User, accessToken: string) {
+  localStorage.setItem("user", JSON.stringify(user));
+  localStorage.setItem("accessToken", accessToken);
 }
 
 export function getStoredUser(): User | null {
@@ -37,18 +16,53 @@ export function getStoredUser(): User | null {
 }
 
 export function getAccessToken(): string | null {
-  return accessToken || localStorage.getItem("accessToken");
+  return localStorage.getItem("accessToken");
 }
 
-export function storeUser(user: User, at: string) {
-  accessToken = at;
-  localStorage.setItem("user", JSON.stringify(user));
-  localStorage.setItem("accessToken", at);
-}
-
-export function clearUser() {
-  accessToken = null;
+export function clearStorage() {
   localStorage.removeItem("user");
   localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
+}
+
+// Auth actions
+export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
+  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/login`, {
+    method: "POST",
+    body: JSON.stringify(credentials),
+  });
+  storeTokens(data.user, data.accessToken);
+  toast.success("Logged in 🎉");
+  return data;
+}
+
+export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
+  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/register`, {
+    method: "POST",
+    body: JSON.stringify(credentials),
+  });
+  storeTokens(data.user, data.accessToken);
+  toast.success("Account created 🚀");
+  return data;
+}
+
+export async function refresh(): Promise<string | null> {
+  try {
+    const data = await apiFetch<{ accessToken: string }>(`${AUTH_URL}/refresh`, {
+      method: "POST",
+    });
+    localStorage.setItem("accessToken", data.accessToken);
+    return data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
+export async function logout(): Promise<void> {
+  await apiFetch(`${AUTH_URL}/logout`, { method: "POST" });
+  clearStorage();
+  toast("Logged out 👋", { icon: "👋" });
+}
+
+export async function getMe(): Promise<User> {
+  return apiFetch<User>(`${AUTH_URL}/me`, { method: "GET" });
 }
