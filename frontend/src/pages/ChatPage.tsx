@@ -2,10 +2,10 @@ import { useAuth } from '../context/AuthContext';
 
 function ChatPage() {
     // Destructure the 'user' from your authentication context
-    const { user, loading } = useAuth(); 
+    const { user, isLoading } = useAuth(); 
 
     // 1. Handle Loading State (Crucial for an Auth Protected page)
-    if (loading) {
+    if (isLoading) {
         return <div>Loading user status...</div>;
     }
     

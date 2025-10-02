@@ -3,10 +3,10 @@ import { Navigate } from "react-router-dom";
 import React from 'react';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth(); 
+  const { user, isLoading } = useAuth(); 
  
   // This prevents the redirect from firing prematurely.
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ padding: '50px', textAlign: 'center' }}>
         Authenticating session...

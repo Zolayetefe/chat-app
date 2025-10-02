@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from './pages/LandingPage';
 import AuthLayout from './components/AuthLayout';
+import ChatLayout from "./components/ChatLayout";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ChatPage from "./pages/ChatPage";
@@ -15,7 +16,9 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
          <Route path="/" element={<LandingPage />} />
-       <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      <Route element= {<ChatLayout/>}>
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      </Route>
       </Routes>
   );
 };

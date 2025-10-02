@@ -6,7 +6,7 @@ import { login, register, logout, getStoredUser, refresh } from "../services/aut
 
 type AuthContextType = {
   user: User | null;
-  loading: boolean; // ⬅️ ADDED
+  isLoading: boolean; // ⬅️ ADDED
   loginUser: (credentials: LoginCredentials) => Promise<void>;
   registerUser: (credentials: RegisterCredentials) => Promise<void>;
   logoutUser: () => Promise<void>;
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   // 1. Initialize loading state to TRUE
-  const [loading, setLoading] = useState(true); 
+  const [isLoading, setLoading] = useState(true); 
 
   // Load user (This runs on every app start/refresh)
   useEffect(() => {
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logoutUser }}>
+    <AuthContext.Provider value={{ user, isLoading, loginUser, registerUser, logoutUser }}>
       {children}
     </AuthContext.Provider>
   );
