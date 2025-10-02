@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 
 // New imports for icons (assuming you have react-icons installed)

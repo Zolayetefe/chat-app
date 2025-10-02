@@ -1,33 +1,28 @@
 import { useState } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import type { RegisterCredentials } from '../types/auth';
-import { useAuth } from '../context/AuthContext';
+import type { LoginCredentials } from '../../types/auth';
+import { useAuth } from '../../context/AuthContext';
 
-function RegisterPage() {
-  const { registerUser } = useAuth();
+function LoginPage() {
+  const { loginUser } = useAuth();
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState<RegisterCredentials>({ name: '', username: '', password: '' });
+  const [credentials, setCredentials] = useState<LoginCredentials>({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (!credentials.name || !credentials.username || !credentials.password) {
+    if (!credentials.username || !credentials.password) {
       setIsLoading(false);
-      return; // apiFetch will toast error
-    }
-
-    if (credentials.password.length < 6) {
-      setIsLoading(false);
-      return; // apiFetch will toast error
+      return; // apiFetch will toast error via authService
     }
 
     try {
-      await registerUser(credentials); // registerUser toasts success
-      navigate('/login');
+      await loginUser(credentials); // loginUser already toasts success
+      navigate('/chat');
     } catch {
-      // Error toast handled by apiFetch or registerUser
+      // Error toast handled by apiFetch or loginUser
     } finally {
       setIsLoading(false);
     }
@@ -36,22 +31,8 @@ function RegisterPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4 sm:px-6 lg:px-8">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Create Your Account</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Sign In</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={credentials.name}
-              onChange={(e) => setCredentials({ ...credentials, name: e.target.value })}
-              placeholder="Enter your name"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              autoComplete="name"
-            />
-          </div>
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
               Username
@@ -77,7 +58,7 @@ function RegisterPage() {
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
               placeholder="Enter your password"
               className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              autoComplete="new-password"
+              autoComplete="current-password"
             />
           </div>
           <button
@@ -87,13 +68,13 @@ function RegisterPage() {
               isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {isLoading ? 'Registering...' : 'Register'}
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <NavLink to="/login" className="text-blue-600 hover:underline">
-            Login
+          Don't have an account?{' '}
+          <NavLink to="/register" className="text-blue-600 hover:underline">
+            Register
           </NavLink>
         </p>
       </div>
@@ -101,4 +82,4 @@ function RegisterPage() {
   );
 }
 
-export default RegisterPage;
+export default LoginPage;
