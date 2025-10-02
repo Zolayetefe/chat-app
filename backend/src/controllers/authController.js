@@ -26,10 +26,11 @@ const registerUser = async (req, res) => {
   });
 
   res.status(201).json({
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    accessToken,
+   user:{
+    name:user.name,
+    username:user.username
+   },
+   accessToken
   });
 };
 
@@ -54,10 +55,12 @@ console.log("from login controller")
   });
 
   res.json({
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    accessToken,
+   user:{
+    name:user.name,
+  
+    username:user.username
+   },
+   accessToken
   });
 };
 
