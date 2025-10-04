@@ -4,7 +4,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const { Server } = require("socket.io");
 const chatSocket = require("./sockets/chatSocket");
-const { initMessageController } = require("./controllers/messageController");
+
 
 // ---- Connect to MongoDB ----
 connectDB();
@@ -22,7 +22,7 @@ const io = new Server(server, {
 
 // Pass `io` to sockets + controllers
 chatSocket(io);
-initMessageController(io);
+
 
 // ---- Start server ----
 const PORT = process.env.PORT || 5000;

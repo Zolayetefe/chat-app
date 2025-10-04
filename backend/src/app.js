@@ -7,7 +7,10 @@ const errorHandler = require("./middlewares/errorHandler");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
-// const messageRoutes = require("./routes/messageRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const conversationRoutes =  require("./routes/conversationRoutes")
+const userRoutes =  require("./routes/userRoutes")
+
 
 // Import error handler
 
@@ -41,8 +44,9 @@ app.use(morgan("dev"));
 // ---- Routes ----
 // ---- Routes ----
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/messages", require("./routes/messageRoutes"));
-app.use("/api/v1/conversations", require("./routes/conversationRoutes"));
+app.use("/api/v1/messages", messageRoutes);
+app.use("/api/v1/conversations",conversationRoutes);
+app.use("/api/v1/users", userRoutes);
 
 // ---- Health Check ----
 app.get("/", (req, res) => {
