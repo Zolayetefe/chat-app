@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import type { User, LoginCredentials, RegisterCredentials, AuthResponse } from "../types/auth";
 import { apiFetch } from "../api/api";
+import type { AxiosRequestConfig } from "axios";
 
 const AUTH_URL = "/auth";
 
@@ -37,13 +38,14 @@ export function clearStorage() {
 
 // Auth actions
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/login`, {
+  const config: AxiosRequestConfig = {
     method: "POST",
-    body: JSON.stringify(credentials),
-  });
+    data: credentials, // Axios handles JSON.stringify
+  };
+
+  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/login`, config);
   console.log("Login response:", data); // Debug
-  const user = data.user;
-  const accessToken = data.accessToken;
+  const { user, accessToken } = data;
   if (!user || !accessToken) {
     throw new Error("Invalid login response: Missing user or access token");
   }
@@ -53,15 +55,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
 }
 
 export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
-  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/register`, {
+  const config: AxiosRequestConfig = {
     method: "POST",
-    body: JSON.stringify(credentials),
-  });
+    data: credentials, // Axios handles JSON.stringify
+  };
+
+  const data = await apiFetch<AuthResponse>(`${AUTH_URL}/register`, config);
   console.log("Register response:", data); // Debug
-  const user = data.user ;
-  const accessToken = data.accessToken;
-  console.log("user:",user)
-  console.log("accessToken:",accessToken)
+  const { user, accessToken } = data;
+  console.log("user:", user);
+  console.log("accessToken:", accessToken);
   if (!user || !accessToken) {
     throw new Error("Invalid register response: Missing user or access token");
   }
@@ -72,11 +75,12 @@ export async function register(credentials: RegisterCredentials): Promise<AuthRe
 
 export async function refresh(): Promise<string | null> {
   try {
-    const data = await apiFetch<{ accessToken: string }>(`${AUTH_URL}/refresh`, {
+    const config: AxiosRequestConfig = {
       method: "POST",
-    });
+    };
+    const data = await apiFetch<{ accessToken: string }>(`${AUTH_URL}/refresh`, config);
     console.log("Refresh response:", data); // Debug
-    const accessToken = data.accessToken;
+    const { accessToken } = data;
     if (!accessToken) {
       throw new Error("Invalid refresh response: Missing access token");
     }
@@ -88,13 +92,19 @@ export async function refresh(): Promise<string | null> {
 }
 
 export async function logout(): Promise<void> {
-  await apiFetch(`${AUTH_URL}/logout`, { method: "POST" });
+  const config: AxiosRequestConfig = {
+    method: "POST",
+  };
+  await apiFetch(`${AUTH_URL}/logout`, config);
   clearStorage();
   toast("Logged out 👋", { icon: "👋" });
 }
 
 export async function getMe(): Promise<User> {
-  const data = await apiFetch<User>(`${AUTH_URL}/me`, { method: "GET" });
+  const config: AxiosRequestConfig = {
+    method: "GET",
+  };
+  const data = await apiFetch<User>(`${AUTH_URL}/me`, config);
   console.log("GetMe response:", data); // Debug
   return data;
 }

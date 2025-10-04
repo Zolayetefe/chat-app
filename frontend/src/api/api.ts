@@ -1,55 +1,68 @@
-import { refresh, getAccessToken, clearStorage, storeTokens } from "../services/authService";
+import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
+import { refresh, getAccessToken, clearStorage } from "../services/authService";
 import toast from "react-hot-toast";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
-export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  let accessToken = getAccessToken();
-
-  const headers: HeadersInit = {
+const axiosInstance = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: {
     "Content-Type": "application/json",
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    ...options.headers,
-  };
+  },
+});
 
-  try {
-    const res = await fetch(`${API_BASE}${url}`, { ...options, headers, credentials: "include" });
+// Request interceptor to add access token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    if (res.status === 401) {
-      const errorText = await res.text();
-      if (
-        errorText.includes("Not authorized, token failed") ||
-        errorText.includes("Not authorized, no token")
-      ) {
-        // Try refresh
+// Response interceptor for handling 401 and token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      (error.response?.data?.includes("Not authorized, token failed") ||
+        error.response?.data?.includes("Not authorized, no token"))
+    ) {
+      originalRequest._retry = true;
+      try {
         const newAccessToken = await refresh();
         if (newAccessToken) {
-          // Retry request
-          const retryHeaders = {
-            ...headers,
-            Authorization: `Bearer ${newAccessToken}`,
-          };
-
-          const retryRes = await fetch(`${API_BASE}${url}`, {
-            ...options,
-            headers: retryHeaders,
-            credentials: "include",
-          });
-
-          if (!retryRes.ok) throw new Error(await retryRes.text());
-          return retryRes.json();
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return axiosInstance(originalRequest);
         } else {
           clearStorage();
           toast.error("Session expired, please login again");
-          throw new Error("Unauthorized");
+          return Promise.reject(new Error("Unauthorized"));
         }
+      } catch (refreshErr) {
+        clearStorage();
+        toast.error("Session expired, please login again");
+        return Promise.reject(new Error("Unauthorized"));
       }
     }
+    const errorMessage = error.response?.data?.message || error.message || "Request failed";
+    toast.error(errorMessage);
+    return Promise.reject(error);
+  }
+);
 
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+export async function apiFetch<T>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
+  try {
+    const res: AxiosResponse<T> = await axiosInstance(url, options);
+    return res.data;
   } catch (err: any) {
-    toast.error(err.message || "Request failed");
-    throw err;
+    throw err; // Error already handled by interceptor
   }
 }
