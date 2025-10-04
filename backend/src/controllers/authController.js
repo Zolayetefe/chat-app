@@ -56,8 +56,8 @@ console.log("from login controller")
 
   res.json({
    user:{
+    id:user._id,
     name:user.name,
-  
     username:user.username
    },
    accessToken
