@@ -1,8 +1,9 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { FiSearch, FiUsers, FiMessageSquare } from "react-icons/fi";
 import type { Conversation, SearchUser } from "../../types/chat";
-import { useUserSearch} from "../../hooks/useUserSearch"
+import { useUserSearch } from "../../hooks/useUserSearch";
 import { type Socket } from "socket.io-client";
+import { useAuth } from "../../context/AuthContext";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -14,6 +15,7 @@ interface ConversationListProps {
 function ConversationList({ conversations, currentUserId, socket, setConversations }: ConversationListProps) {
   const navigate = useNavigate();
   const { searchTerm, setSearchTerm, searchResults, handleInputChange } = useUserSearch(currentUserId);
+  const { user } = useAuth();
 
   // Check if a conversation already exists with the found user
   const existingConv = (otherUserId: string) =>
@@ -38,6 +40,7 @@ function ConversationList({ conversations, currentUserId, socket, setConversatio
       lastMessage: "Say hello!",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       otherUserId: user._id,
+      participants: [currentUserId, user._id], // Include both users
     };
 
     // Add temporary conversation to the list and navigate
@@ -100,7 +103,7 @@ function ConversationList({ conversations, currentUserId, socket, setConversatio
             }
           >
             <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-sm mr-3">
-              {conv.type === "group" ? <FiUsers /> : conv.name[0]}
+              {conv.type === "group" ? <FiUsers /> : conv.name[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center">
