@@ -11,14 +11,14 @@ export function useSocket(
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>
 ) {
   const handleReceiveMessage = useCallback(
-    (message: { conversationId: string; content: string }) => {
+    (message: any) => {
       setConversations((prev) => {
         const updatedConv = prev.map((conv) => {
           if (conv.id === message.conversationId) {
             return {
               ...conv,
               lastMessage: message.content,
-              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             };
           }
           return conv;
@@ -27,6 +27,31 @@ export function useSocket(
       });
     },
     [setConversations]
+  );
+
+  const handleMessageSent = useCallback(
+    ({ conversation, message }: { conversation: any; message: any }) => {
+      setConversations((prev) => {
+        const tempConvIndex = prev.findIndex((conv) => conv.id.startsWith("temp-"));
+        if (tempConvIndex !== -1) {
+          const otherParticipant = conversation.participants.find((p: any) => p._id !== userId);
+          const newConv: Conversation = {
+            id: conversation._id,
+            type: conversation.participants.length > 2 ? "group" : "individual",
+            name: otherParticipant ? otherParticipant.username : "Group Chat",
+            lastMessage: message.content,
+            timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            otherUserId: otherParticipant ? otherParticipant._id : undefined,
+            participants: conversation.participants.map((p: any) => p._id),
+          };
+          const updatedConversations = [...prev];
+          updatedConversations[tempConvIndex] = newConv;
+          return updatedConversations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
+        return prev;
+      });
+    },
+    [userId, setConversations]
   );
 
   useEffect(() => {
@@ -38,19 +63,23 @@ export function useSocket(
       console.log("Socket Connected:", socket.id);
       // Join rooms for existing conversations
       conversations.forEach((conv) => {
-        socket.emit("join_room", conv.id);
+        if (!conv.id.startsWith("temp-")) {
+          socket.emit("join_room", conv.id);
+        }
       });
     });
 
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("message_sent", handleMessageSent);
 
     // Cleanup on unmount or user change
     return () => {
       socket.off("connect");
       socket.off("receive_message");
+      socket.off("message_sent");
       socket.disconnect();
     };
-  }, [userId, conversations, handleReceiveMessage]);
+  }, [userId, conversations, handleReceiveMessage, handleMessageSent]);
 
   return socket;
 }
