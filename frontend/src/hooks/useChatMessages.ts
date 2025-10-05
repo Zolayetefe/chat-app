@@ -22,12 +22,18 @@ export function useChatMessages(
 
     setIsFetchingMessages(true);
     try {
-      const response = await apiFetch<Message[]>(`/messages/${activeConversation.id}`, { method: "GET" });
+      const response = await apiFetch<Message[]>(`messages/${activeConversation.id}`, { method: "GET" });
       const formattedMessages: Message[] = response.map((msg: any) => ({
-        ...msg,
         id: msg._id,
-        isMine: msg.sender === currentUserId,
+        conversationId: msg.conversationId,
+        sender: msg.sender._id,
+        receiver: msg.receiver._id,
+        content: msg.content,
+        isRead: msg.isRead,
+        createdAt: msg.createdAt,
+        isMine: msg.sender._id === currentUserId,
         timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        senderUsername: msg.sender.username,
       }));
       setMessages(formattedMessages);
     } catch (error) {
@@ -49,7 +55,6 @@ export function useChatMessages(
         content: messageText.trim(),
         roomId: activeConversation.id.startsWith("temp-") ? null : activeConversation.id,
       };
-     console.log("mwssage data",messageData)
       socket.emit("send_message", messageData);
     },
     [activeConversation, currentUserId, socket]
@@ -68,10 +73,16 @@ export function useChatMessages(
     const handleReceiveMessage = (message: any) => {
       if (message.conversationId === activeConversation.id) {
         const formattedMsg: Message = {
-          ...message,
           id: message._id,
-          isMine: message.sender === currentUserId,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          conversationId: message.conversationId,
+          sender: message.sender._id,
+          receiver: message.receiver._id,
+          content: message.content,
+          isRead: message.isRead,
+          // createdAt: message.createdAt,
+          isMine: message.sender._id === currentUserId,
+          timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          senderUsername: message.sender.username,
         };
         setMessages((prev) => [...prev, formattedMsg]);
       }
@@ -82,10 +93,16 @@ export function useChatMessages(
       if (activeConversation.id.startsWith("temp-")) {
         navigate(`/chat/${conversation._id}`, { replace: true });
         const formattedMsg: Message = {
-          ...message,
           id: message._id,
+          conversationId: message.conversationId,
+          sender: message.sender._id,
+          receiver: message.receiver._id,
+          content: message.content,
+          isRead: message.isRead,
+          // createdAt: message.createdAt,
           isMine: true,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          senderUsername: message.sender.username,
         };
         setMessages([formattedMsg]);
       }
