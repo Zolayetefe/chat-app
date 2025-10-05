@@ -1,12 +1,11 @@
-// types/chat.ts
-
 export interface Conversation {
-  id: string; // conversationId
-  type: 'individual' | 'group';
+  id: string; // conversationId (_id from MongoDB)
+  type: "individual" | "group";
   name: string; // Other participant's username or group name
   lastMessage: string;
-  timestamp: string; // formatted time
+  timestamp: string; // Formatted time
   otherUserId?: string; // The ID of the other user for 1-on-1 chats
+  participants: string[]; // Array of participant user IDs
 }
 
 export interface Message {
@@ -16,9 +15,9 @@ export interface Message {
   receiver: string; // receiver User._id
   content: string;
   isRead: boolean;
-  createdAt: string;
+  timestamp: string;
   isMine?: boolean; // Frontend property for styling
-  senderUsername?: string; // Optional for group chats
+  senderUsername?: string; // Populated sender username
 }
 
 export interface SearchUser {
