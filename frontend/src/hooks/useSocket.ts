@@ -3,7 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import type { Conversation } from "../types/chat";
 
 // Initialize socket outside component to avoid multiple connections
-const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5173");
+const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
 
 export function useSocket(
   userId: string | undefined,
