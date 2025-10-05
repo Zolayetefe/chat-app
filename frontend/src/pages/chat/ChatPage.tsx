@@ -5,6 +5,7 @@ import type { Conversation } from "../../types/chat";
 import { useState, useEffect, useCallback } from "react";
 import { useSocket } from "../../hooks/useSocket";
 import { apiFetch } from "../../api/api";
+
 function ChatPage() {
   const { user, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -14,17 +15,29 @@ function ChatPage() {
   const fetchConversations = useCallback(async (userId: string) => {
     setIsConversationsLoading(true);
     try {
-      const data = await apiFetch<Conversation[]>(`/conversations/${userId}`, { method: "GET" });
+      const data = await apiFetch<any[]>(`/conversations/${userId}`, { method: "GET" });
       // Safety check: ensure the data is an array
       if (Array.isArray(data)) {
-        setConversations(data);
+        const formattedConversations: Conversation[] = data.map((conv) => {
+          const otherParticipant = conv.participants.find((p: any) => p._id !== userId);
+          return {
+            id: conv._id,
+            type: conv.participants.length > 2 ? "group" : "individual",
+            name: otherParticipant ? otherParticipant.username : "Group Chat",
+            lastMessage: conv.lastMessage || "",
+            timestamp: new Date(conv.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            otherUserId: otherParticipant ? otherParticipant._id : undefined,
+            participants: conv.participants.map((p: any) => p._id),
+          };
+        });
+        setConversations(formattedConversations);
       } else {
         console.warn("API returned non-array data for conversations.");
         setConversations([]);
       }
     } catch (error) {
       console.error("Failed to fetch conversations", error);
-      setConversations([]); // Ensure conversations state remains an array
+      setConversations([]);
     } finally {
       setIsConversationsLoading(false);
     }
