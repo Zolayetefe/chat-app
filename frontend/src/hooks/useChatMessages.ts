@@ -10,6 +10,8 @@ export function useChatMessages(
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
+  const [isTyping, setIsTyping] = useState<{ userId: string; username: string } | null>(null);
+  let typingTimeout: number | null = null;
 
   // Fetch message history
   const fetchMessages = useCallback(async () => {
@@ -54,11 +56,22 @@ export function useChatMessages(
         roomId: activeConversation.id.startsWith("temp-") ? null : activeConversation.id,
       };
       socket.emit("send_message", messageData);
+      // Stop typing when sending a message
+      socket.emit("typing", { roomId: activeConversation.id, userId: currentUserId, isTyping: false });
     },
     [activeConversation, currentUserId, socket]
   );
 
-  // Socket listeners for messages and conversation updates
+  // Handle typing events
+  const handleTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!activeConversation || activeConversation.id.startsWith("temp-")) return;
+      socket.emit("typing", { roomId: activeConversation.id, userId: currentUserId, isTyping });
+    },
+    [activeConversation, currentUserId, socket]
+  );
+
+  // Socket listeners for messages and typing
   useEffect(() => {
     if (!activeConversation) return;
 
@@ -80,14 +93,28 @@ export function useChatMessages(
           isRead: message.isRead,
           // createdAt: message.createdAt,
           isMine: message.sender._id === currentUserId,
-          timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          createdAt: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           senderUsername: message.sender.username,
         };
         setMessages((prev) => [...prev, formattedMsg]);
       }
     };
 
+    // Handle typing events
+    const handleTypingEvent = ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
+      if (userId !== currentUserId && activeConversation?.otherUserId === userId) {
+        if (isTyping) {
+          setIsTyping({ userId, username: activeConversation.name });
+          if (typingTimeout) clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => setIsTyping(null), 3000); // Clear after 3 seconds
+        } else {
+          setIsTyping(null);
+        }
+      }
+    };
+
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("typing", handleTypingEvent);
 
     // Cleanup
     return () => {
@@ -95,6 +122,8 @@ export function useChatMessages(
         socket.emit("leave_room", activeConversation.id);
       }
       socket.off("receive_message", handleReceiveMessage);
+      socket.off("typing", handleTypingEvent);
+      if (typingTimeout) clearTimeout(typingTimeout);
     };
   }, [activeConversation, currentUserId, socket]);
 
@@ -103,5 +132,5 @@ export function useChatMessages(
     fetchMessages();
   }, [fetchMessages]);
 
-  return { messages, setMessages, isFetchingMessages, handleSendMessage };
+  return { messages, setMessages, isFetchingMessages, handleSendMessage, handleTyping, isTyping };
 }
