@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: 6,
     },
+     lastSeen: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
