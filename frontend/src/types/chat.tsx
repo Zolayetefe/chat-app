@@ -15,7 +15,7 @@ export interface Message {
   receiver: string; // receiver User._id
   content: string;
   isRead: boolean;
-  timestamp: string;
+  createdAt: string;
   isMine?: boolean; // Frontend property for styling
   senderUsername?: string; // Populated sender username
 }
@@ -23,4 +23,9 @@ export interface Message {
 export interface SearchUser {
   _id: string;
   username: string;
+}
+
+export interface UserStatus {
+  isOnline: boolean;
+  lastSeen?: string;
 }
