@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
 import type { Message, Conversation } from "../types/chat";
 import type { Socket } from "socket.io-client";
@@ -11,7 +10,6 @@ export function useChatMessages(
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
-  const navigate = useNavigate();
 
   // Fetch message history
   const fetchMessages = useCallback(async () => {
@@ -22,7 +20,7 @@ export function useChatMessages(
 
     setIsFetchingMessages(true);
     try {
-      const response = await apiFetch<Message[]>(`messages/${activeConversation.id}`, { method: "GET" });
+      const response = await apiFetch<Message[]>(`/messages/${activeConversation.id}`, { method: "GET" });
       const formattedMessages: Message[] = response.map((msg: any) => ({
         id: msg._id,
         conversationId: msg.conversationId,
@@ -70,7 +68,8 @@ export function useChatMessages(
     }
 
     // Handle incoming messages
-    const handleReceiveMessage = (message: any) => {
+    const handleReceiveMessage = (data: { message: any; conversation: any }) => {
+      const { message } = data;
       if (message.conversationId === activeConversation.id) {
         const formattedMsg: Message = {
           id: message._id,
@@ -88,28 +87,7 @@ export function useChatMessages(
       }
     };
 
-    // Handle temporary conversation ID replacement
-    const handleMessageSent = ({ conversation, message }: { conversation: any; message: any }) => {
-      if (activeConversation.id.startsWith("temp-")) {
-        navigate(`/chat/${conversation._id}`, { replace: true });
-        const formattedMsg: Message = {
-          id: message._id,
-          conversationId: message.conversationId,
-          sender: message.sender._id,
-          receiver: message.receiver._id,
-          content: message.content,
-          isRead: message.isRead,
-          // createdAt: message.createdAt,
-          isMine: true,
-          timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          senderUsername: message.sender.username,
-        };
-        setMessages([formattedMsg]);
-      }
-    };
-
     socket.on("receive_message", handleReceiveMessage);
-    socket.on("message_sent", handleMessageSent);
 
     // Cleanup
     return () => {
@@ -117,9 +95,8 @@ export function useChatMessages(
         socket.emit("leave_room", activeConversation.id);
       }
       socket.off("receive_message", handleReceiveMessage);
-      socket.off("message_sent", handleMessageSent);
     };
-  }, [activeConversation, currentUserId, socket, navigate]);
+  }, [activeConversation, currentUserId, socket]);
 
   // Fetch messages when active conversation changes
   useEffect(() => {
