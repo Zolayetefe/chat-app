@@ -4,6 +4,12 @@ const Conversation = require("../models/Conversation");
 module.exports = (io) => {
   io.on("connection", (socket) => {
     console.log(`🟢 User connected: ${socket.id}`);
+    
+    // Join user room
+    socket.on("join_user_room", (userId) => {
+      socket.join(userId);
+      console.log(`User ${socket.id} joined user room ${userId}`);
+    });
 
     // Join a conversation room
     socket.on("join_room", (roomId) => {
@@ -11,73 +17,84 @@ module.exports = (io) => {
       console.log(`User ${socket.id} joined room ${roomId}`);
     });
 
-  // ...
-// ✅ Send message via WebSocket (replaces controller HTTP route)
-socket.on("send_message", async ({ sender, receiver, content, roomId }) => { // <--- Added roomId
-  try {
-    if (!sender || !receiver || !content) {
-      socket.emit("error_message", { error: "All fields are required" });
-      return;
-    }
+    // Send message via WebSocket
+    socket.on("send_message", async ({ sender, receiver, content, roomId }) => {
+      console.log("send message hit");
+      try {
+        if (!sender || !receiver || !content) {
+          socket.emit("error_message", { error: "All fields are required" });
+          return;
+        }
+        // 1. Find existing conversation or create new
+        let conversation;
 
-    // 1. Find existing conversation or create new
-    let conversation;
+        if (roomId && !roomId.startsWith('temp-')) {
+          conversation = await Conversation.findById(roomId);
+        } 
 
-    if (roomId && !roomId.startsWith('temp-')) { // Use existing room if provided and not temporary
-        conversation = await Conversation.findById(roomId);
-    } 
+        if (!conversation) {
+          conversation = await Conversation.findOne({
+            participants: { $all: [sender, receiver] },
+          });
 
-    if (!conversation) {
-      // If no room or failed lookup, find by participants or create new
-      conversation = await Conversation.findOne({
-        participants: { $all: [sender, receiver] },
-      });
+          if (!conversation) {
+            conversation = await Conversation.create({
+              participants: [sender, receiver],
+              lastMessage: content,
+            });
+          } else {
+            conversation.lastMessage = content;
+            await conversation.save();
+          }
+        } else {
+          conversation.lastMessage = content;
+          await conversation.save();
+        }
+        
+        // Populate conversation participants
+        conversation = await Conversation.findById(conversation._id).populate("participants", "username email");
 
-      if (!conversation) {
-        conversation = await Conversation.create({
-          participants: [sender, receiver],
-          lastMessage: content,
+        // IMPORTANT: If this was a new conversation, the sender needs to join the new room now
+        if (conversation._id.toString() !== roomId) {
+          socket.join(conversation._id.toString());
+          console.log(`User ${socket.id} joined newly created room ${conversation._id.toString()}`);
+        }
+
+        // 2. Save the message
+        const message = await Message.create({
+          conversationId: conversation._id,
+          sender,
+          receiver,
+          content,
         });
-      } else {
-        conversation.lastMessage = content;
-        await conversation.save();
-      }
-    } else {
-      conversation.lastMessage = content;
-      await conversation.save();
-    }
-    
-    // IMPORTANT: If this was a new conversation, the sender needs to join the new room now
-    if (conversation._id.toString() !== roomId) {
-        socket.join(conversation._id.toString());
-        console.log(`User ${socket.id} joined newly created room ${conversation._id.toString()}`);
-    }
 
-    // 2. Save the message
-    const message = await Message.create({
-      conversationId: conversation._id,
-      sender,
-      receiver,
-      content,
+        // Populate message sender and receiver
+        const populatedMessage = await Message.findById(message._id)
+          .populate("sender", "username email")
+          .populate("receiver", "username email");
+
+        // 3. Emit message to room
+        io.to(conversation._id.toString()).emit("receive_message", { message: populatedMessage, conversation });
+
+        // If new conversation, also emit to receiver's user room
+        if (!roomId || roomId.startsWith('temp-')) {
+          io.to(receiver).emit("receive_message", { message: populatedMessage, conversation });
+        }
+
+        // Optionally: acknowledge sender and send the created conversation object
+        socket.emit("message_sent", { conversation, message: populatedMessage });
+      } catch (err) {
+        console.error("Error sending message:", err);
+        socket.emit("error_message", { error: "Failed to send message" });
+      }
     });
 
-    // 3. Emit message to room
-    io.to(conversation._id.toString()).emit("receive_message", message);
+    // Add a 'leave_room' handler for cleanup
+    socket.on("leave_room", (roomId) => {
+      socket.leave(roomId);
+      console.log(`User ${socket.id} left room ${roomId}`);
+    });
 
-    // Optionally: acknowledge sender and send the created conversation object
-    socket.emit("message_sent", { conversation, message });
-  } catch (err) {
-    console.error("Error sending message:", err);
-    socket.emit("error_message", { error: "Failed to send message" });
-  }
-});
-
-// Add a 'leave_room' handler for cleanup
-socket.on("leave_room", (roomId) => {
-    socket.leave(roomId);
-    console.log(`User ${socket.id} left room ${roomId}`);
-});
-// ...
     // Typing indicator
     socket.on("typing", (data) => {
       socket.to(data.roomId).emit("typing", data);
