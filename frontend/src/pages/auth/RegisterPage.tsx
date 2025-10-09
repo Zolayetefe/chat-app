@@ -6,25 +6,47 @@ import { useAuth } from '../../context/AuthContext';
 function RegisterPage() {
   const { registerUser } = useAuth();
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState<RegisterCredentials>({ name: '', username: '', password: '' });
+  const [credentials, setCredentials] = useState<RegisterCredentials>({
+    name: '',
+    username: '',
+    password: '',
+  });
+  const [errors, setErrors] = useState<{ name?: string; username?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const validate = (): boolean => {
+    const newErrors: { name?: string; username?: string; password?: string } = {};
+
+    if (!credentials.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (credentials.name.length < 3) {
+      newErrors.name = 'Name must be at least 3 characters';
+    }
+
+    if (!credentials.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (credentials.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!credentials.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (credentials.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
     setIsLoading(true);
-
-    if (!credentials.name || !credentials.username || !credentials.password) {
-      setIsLoading(false);
-      return; // apiFetch will toast error
-    }
-
-    if (credentials.password.length < 6) {
-      setIsLoading(false);
-      return; // apiFetch will toast error
-    }
-
     try {
-      await registerUser(credentials); // registerUser toasts success
+      await registerUser(credentials); // success toast handled internally
       navigate('/login');
     } catch {
       // Error toast handled by apiFetch or registerUser
@@ -38,6 +60,7 @@ function RegisterPage() {
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Create Your Account</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Name Field */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Name
@@ -48,10 +71,15 @@ function RegisterPage() {
               value={credentials.name}
               onChange={(e) => setCredentials({ ...credentials, name: e.target.value })}
               placeholder="Enter your name"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={`mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                errors.name ? 'border-red-500' : ''
+              }`}
               autoComplete="name"
             />
+            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
+
+          {/* Username Field */}
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
               Username
@@ -62,10 +90,15 @@ function RegisterPage() {
               value={credentials.username}
               onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
               placeholder="Enter your username"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={`mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                errors.username ? 'border-red-500' : ''
+              }`}
               autoComplete="username"
             />
+            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
           </div>
+
+          {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
@@ -76,10 +109,15 @@ function RegisterPage() {
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
               placeholder="Enter your password"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={`mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                errors.password ? 'border-red-500' : ''
+              }`}
               autoComplete="new-password"
             />
+            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
           </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -90,6 +128,7 @@ function RegisterPage() {
             {isLoading ? 'Registering...' : 'Register'}
           </button>
         </form>
+
         <p className="mt-4 text-center text-sm text-gray-600">
           Already have an account?{' '}
           <NavLink to="/login" className="text-blue-600 hover:underline">
