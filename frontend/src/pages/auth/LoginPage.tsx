@@ -7,22 +7,39 @@ function LoginPage() {
   const { loginUser } = useAuth();
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState<LoginCredentials>({ username: '', password: '' });
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const validate = (): boolean => {
+    const newErrors: { username?: string; password?: string } = {};
+
+    if (!credentials.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (credentials.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!credentials.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (credentials.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
     setIsLoading(true);
-
-    if (!credentials.username || !credentials.password) {
-      setIsLoading(false);
-      return; // apiFetch will toast error via authService
-    }
-
     try {
-      await loginUser(credentials); // loginUser already toasts success
+      await loginUser(credentials);
       navigate('/chat');
     } catch {
-      // Error toast handled by apiFetch or loginUser
+      // Error toast handled by loginUser or apiFetch
     } finally {
       setIsLoading(false);
     }
@@ -33,6 +50,7 @@ function LoginPage() {
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Sign In</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Username Field */}
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
               Username
@@ -43,10 +61,15 @@ function LoginPage() {
               value={credentials.username}
               onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
               placeholder="Enter your username"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={`mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                errors.username ? 'border-red-500' : ''
+              }`}
               autoComplete="username"
             />
+            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
           </div>
+
+          {/* Password Field */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
@@ -57,10 +80,15 @@ function LoginPage() {
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
               placeholder="Enter your password"
-              className="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className={`mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                errors.password ? 'border-red-500' : ''
+              }`}
               autoComplete="current-password"
             />
+            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
           </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -71,6 +99,7 @@ function LoginPage() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
         <p className="mt-4 text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <NavLink to="/register" className="text-blue-600 hover:underline">
