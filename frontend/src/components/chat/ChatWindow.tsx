@@ -122,7 +122,10 @@ function ChatWindow() {
               {!msg.isMine && <p className="text-xs font-semibold mb-1">{msg.senderUsername}</p>}
               <p className="text-sm">{msg.content}</p>
               <span className={`text-xs block mt-1 ${msg.isMine ? "text-blue-200" : "text-gray-400"} text-right`}>
-                {msg.createdAt}
+                {new Date(msg.createdAt).toLocaleString([], {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
               </span>
             </div>
           </div>
